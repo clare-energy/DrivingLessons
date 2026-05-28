@@ -686,7 +686,7 @@ async function loadDriversList(){
           <div><span class="m-no">${esc(d.driver_no)}</span>${esc(d.name)}</div>
           <div class="m-dob">
             ${d.dob ? `DOB: ${fmtDate(d.dob)} &nbsp;&middot;&nbsp; ` : ""}
-            ${d.latest_lesson != null ? `Last lesson: <strong>${d.latest_lesson}</strong> &nbsp;&middot;&nbsp; ` : "No lessons yet &nbsp;&middot;&nbsp; "}
+            ${d.latest_lesson != null ? `Latest with me: <strong>${d.latest_lesson}</strong> &nbsp;&middot;&nbsp; ` : "No lessons yet &nbsp;&middot;&nbsp; "}
             With me: <strong>${d.lesson_count}</strong>
           </div>
         </div>
