@@ -9,8 +9,6 @@ lib/
 lib64/
 pyvenv.cfg
 
-# Database
-*.db
 
 # Old root-level HTML (app uses templates/)
 /index.html
