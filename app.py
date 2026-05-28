@@ -150,6 +150,27 @@ def add_driver():
     return jsonify({"status": "created"}), 201
 
 
+@app.route("/drivers/<int:id>", methods=["PUT"])
+def update_driver(id):
+    data = request.json or {}
+    if not data.get("driver_no") or not data.get("name"):
+        return jsonify({"error": "driver_no and name required"}), 400
+
+    with closing(get_db()) as conn:
+        conn.execute("UPDATE drivers SET driver_no=?, name=?, dob=? WHERE id=?",
+                     (data["driver_no"], data["name"], data.get("dob") or None, id))
+        conn.commit()
+    return jsonify({"status": "updated"})
+
+
+@app.route("/drivers/<int:id>", methods=["DELETE"])
+def delete_driver(id):
+    with closing(get_db()) as conn:
+        conn.execute("DELETE FROM drivers WHERE id=?", (id,))
+        conn.commit()
+    return jsonify({"status": "deleted"})
+
+
 @app.route("/logbooks")
 def get_logbooks():
     with closing(get_db()) as conn:
@@ -168,6 +189,27 @@ def add_logbook():
                      (data["logbook_no"],))
         conn.commit()
     return jsonify({"status": "created"}), 201
+
+
+@app.route("/logbooks/<int:id>", methods=["PUT"])
+def update_logbook(id):
+    data = request.json or {}
+    if not data.get("logbook_no"):
+        return jsonify({"error": "logbook_no required"}), 400
+
+    with closing(get_db()) as conn:
+        conn.execute("UPDATE logbooks SET logbook_no=? WHERE id=?",
+                     (data["logbook_no"], id))
+        conn.commit()
+    return jsonify({"status": "updated"})
+
+
+@app.route("/logbooks/<int:id>", methods=["DELETE"])
+def delete_logbook(id):
+    with closing(get_db()) as conn:
+        conn.execute("DELETE FROM logbooks WHERE id=?", (id,))
+        conn.commit()
+    return jsonify({"status": "deleted"})
 
 
 @app.route("/lesson_types")

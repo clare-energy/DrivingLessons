@@ -226,6 +226,22 @@ select.fctl {
 .mlist li:last-child { border-bottom: none; }
 .m-no  { font-weight: 600; color: var(--accent); font-size: 0.8rem; margin-right: 0.25rem; }
 .m-dob { font-size: 0.775rem; color: var(--text-2); margin-top: 0.1rem; }
+.m-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.m-acts { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.m-edit-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; padding: 0.4rem 0; }
+.m-edit-row .fctl { flex: 1; min-width: 70px; padding: 0.4rem 0.6rem; font-size: 0.8125rem; }
+.btn-save-sm {
+  padding: 0.4rem 0.7rem; background: var(--accent); color: var(--hdr-text);
+  border: none; border-radius: var(--r-sm); font-size: 0.8rem; font-weight: 600;
+  font-family: inherit; cursor: pointer; white-space: nowrap; transition: background 0.15s;
+}
+.btn-save-sm:hover { background: var(--accent-h); }
+.btn-cancel-sm {
+  padding: 0.4rem 0.7rem; background: transparent; color: var(--text-2);
+  border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 0.8rem;
+  font-family: inherit; cursor: pointer; white-space: nowrap; transition: all 0.15s;
+}
+.btn-cancel-sm:hover { background: var(--bg); color: var(--text); }
 
 /* ── DROPDOWN ──────────────────────────────────────────────── */
 .dropdown-menu { border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 0.375rem; min-width: 195px; }
@@ -651,13 +667,56 @@ function openDrivers(){ loadDriversList(); modalDrivers.show(); }
 
 async function loadDriversList(){
   const data = await fetch("/drivers").then(r => r.json());
-  document.getElementById("d-list").innerHTML = data.length
-    ? data.map(d => `
-        <li>
+  const el = document.getElementById("d-list");
+  if(!data.length){ el.innerHTML = `<li style="color:var(--text-2)">No drivers added yet.</li>`; return; }
+  el.innerHTML = data.map(d => `
+    <li id="d-item-${d.id}">
+      <div class="m-row">
+        <div>
           <div><span class="m-no">${esc(d.driver_no)}</span>${esc(d.name)}</div>
           ${d.dob ? `<div class="m-dob">DOB: ${fmtDate(d.dob)}</div>` : ""}
-        </li>`).join("")
-    : `<li style="color:var(--text-2)">No drivers added yet.</li>`;
+        </div>
+        <div class="m-acts">
+          <button class="btn-icon" onclick="editDriverInline(${d.id},'${esc(d.driver_no)}','${esc(d.name)}','${d.dob||''}')" aria-label="Edit">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn-icon del" onclick="deleteDriver(${d.id},'${esc(d.name)}')" aria-label="Delete">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>
+    </li>`).join("");
+}
+
+function editDriverInline(id, no, name, dob){
+  document.getElementById(`d-item-${id}`).innerHTML = `
+    <div class="m-edit-row">
+      <input class="fctl" id="de-no-${id}"   value="${esc(no)}"   placeholder="Driver No" style="max-width:95px">
+      <input class="fctl" id="de-name-${id}" value="${esc(name)}" placeholder="Full name">
+      <input type="date" class="fctl" id="de-dob-${id}" value="${dob}" style="max-width:145px">
+      <button class="btn-save-sm"   onclick="saveDriver(${id})">Save</button>
+      <button class="btn-cancel-sm" onclick="loadDriversList()">Cancel</button>
+    </div>`;
+  document.getElementById(`de-name-${id}`).focus();
+}
+
+async function saveDriver(id){
+  const no   = document.getElementById(`de-no-${id}`).value.trim();
+  const name = document.getElementById(`de-name-${id}`).value.trim();
+  const dob  = document.getElementById(`de-dob-${id}`).value || null;
+  if(!no || !name) return;
+  await fetch(`/drivers/${id}`, {
+    method:  "PUT",
+    headers: {"Content-Type": "application/json"},
+    body:    JSON.stringify({ driver_no: no, name, dob })
+  });
+  loadDriversList();
+}
+
+async function deleteDriver(id, name){
+  if(!confirm(`Delete driver "${name}"? This will not delete their lessons.`)) return;
+  await fetch(`/drivers/${id}`, { method: "DELETE" });
+  loadDriversList();
 }
 
 async function addDriver(){
@@ -665,7 +724,6 @@ async function addDriver(){
   const name = document.getElementById("d-name").value.trim();
   const dob  = document.getElementById("d-dob").value || null;
   if(!no || !name) return;
-
   await fetch("/drivers", {
     method:  "POST",
     headers: {"Content-Type": "application/json"},
@@ -683,9 +741,49 @@ function openLogbooks(){ loadLogbooksList(); modalLogbooks.show(); }
 
 async function loadLogbooksList(){
   const data = await fetch("/logbooks").then(r => r.json());
-  document.getElementById("l-list").innerHTML = data.length
-    ? data.map(l => `<li>${esc(l.logbook_no)}</li>`).join("")
-    : `<li style="color:var(--text-2)">No logbooks added yet.</li>`;
+  const el = document.getElementById("l-list");
+  if(!data.length){ el.innerHTML = `<li style="color:var(--text-2)">No logbooks added yet.</li>`; return; }
+  el.innerHTML = data.map(l => `
+    <li id="l-item-${l.id}">
+      <div class="m-row">
+        <span>${esc(l.logbook_no)}</span>
+        <div class="m-acts">
+          <button class="btn-icon" onclick="editLogbookInline(${l.id},'${esc(l.logbook_no)}')" aria-label="Edit">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn-icon del" onclick="deleteLogbook(${l.id},'${esc(l.logbook_no)}')" aria-label="Delete">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>
+    </li>`).join("");
+}
+
+function editLogbookInline(id, no){
+  document.getElementById(`l-item-${id}`).innerHTML = `
+    <div class="m-edit-row">
+      <input class="fctl" id="le-no-${id}" value="${esc(no)}" placeholder="Logbook No">
+      <button class="btn-save-sm"   onclick="saveLogbook(${id})">Save</button>
+      <button class="btn-cancel-sm" onclick="loadLogbooksList()">Cancel</button>
+    </div>`;
+  document.getElementById(`le-no-${id}`).focus();
+}
+
+async function saveLogbook(id){
+  const no = document.getElementById(`le-no-${id}`).value.trim();
+  if(!no) return;
+  await fetch(`/logbooks/${id}`, {
+    method:  "PUT",
+    headers: {"Content-Type": "application/json"},
+    body:    JSON.stringify({ logbook_no: no })
+  });
+  loadLogbooksList();
+}
+
+async function deleteLogbook(id, no){
+  if(!confirm(`Delete logbook "${no}"?`)) return;
+  await fetch(`/logbooks/${id}`, { method: "DELETE" });
+  loadLogbooksList();
 }
 
 async function addLogbook(){
