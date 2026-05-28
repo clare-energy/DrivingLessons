@@ -221,15 +221,25 @@ select.fctl {
   font-family: inherit; cursor: pointer; flex-shrink: 0; transition: background 0.15s; white-space: nowrap;
 }
 .btn-add:hover { background: var(--accent-h); }
-.mlist { list-style: none; padding: 0; margin: 0; }
-.mlist li { padding: 0.5rem 0; border-bottom: 1px solid var(--border-lite); font-size: 0.875rem; color: var(--text); line-height: 1.4; }
-.mlist li:last-child { border-bottom: none; }
-.m-no  { font-weight: 600; color: var(--accent); font-size: 0.8rem; margin-right: 0.25rem; }
-.m-dob { font-size: 0.775rem; color: var(--text-2); margin-top: 0.1rem; }
-.m-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.m-acts { display: flex; gap: 0.3rem; flex-shrink: 0; }
-.m-edit-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; padding: 0.4rem 0; }
-.m-edit-row .fctl { flex: 1; min-width: 70px; padding: 0.4rem 0.6rem; font-size: 0.8125rem; }
+
+/* modal table */
+.mtable { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.mtable th {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-2); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border);
+  white-space: nowrap; background: oklch(98% 0.005 200);
+}
+.mtable td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border-lite); vertical-align: middle; color: var(--text); }
+.mtable tbody tr:last-child td { border-bottom: none; }
+.mtable tbody tr:hover td { background: oklch(98.5% 0.005 200); }
+.mtable .td-mute { color: var(--text-2); font-size: 0.8125rem; }
+.mtable .td-acts { display: flex; gap: 0.3rem; justify-content: flex-end; }
+.mtable .td-num  { font-weight: 600; color: var(--accent); font-size: 0.8rem; }
+
+/* inline edit row */
+.edit-row td { background: oklch(97% 0.01 200) !important; padding: 0.5rem 0.75rem; }
+.edit-row-inner { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.edit-row-inner .fctl { flex: 1; min-width: 70px; padding: 0.4rem 0.6rem; font-size: 0.8125rem; }
 .btn-save-sm {
   padding: 0.4rem 0.7rem; background: var(--accent); color: var(--hdr-text);
   border: none; border-radius: var(--r-sm); font-size: 0.8rem; font-weight: 600;
@@ -363,7 +373,7 @@ select.fctl {
 
 <!-- ── DRIVERS MODAL ───────────────────────────────────────── -->
 <div class="modal fade" id="driversModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered">
+<div class="modal-dialog modal-dialog-centered modal-lg">
 <div class="modal-content">
   <div class="modal-header">
     <h5 class="modal-title">Manage Drivers</h5>
@@ -376,7 +386,14 @@ select.fctl {
       <input type="date" id="d-dob" class="fctl" style="max-width:155px;flex:none" title="Date of birth">
       <button class="btn-add" onclick="addDriver()">Add</button>
     </div>
-    <ul id="d-list" class="mlist"></ul>
+    <div style="overflow-x:auto">
+      <table class="mtable">
+        <thead><tr>
+          <th>No</th><th>Name</th><th>DOB</th><th>Latest with me</th><th>With me</th><th></th>
+        </tr></thead>
+        <tbody id="d-list"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 </div>
@@ -396,7 +413,14 @@ select.fctl {
       <input id="l-no" class="fctl" placeholder="Logbook No">
       <button class="btn-add" onclick="addLogbook()">Add</button>
     </div>
-    <ul id="l-list" class="mlist"></ul>
+    <div style="overflow-x:auto">
+      <table class="mtable">
+        <thead><tr>
+          <th>Logbook No</th><th>Lessons</th><th></th>
+        </tr></thead>
+        <tbody id="l-list"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 </div>
@@ -678,19 +702,19 @@ document.getElementById("d-list").addEventListener("click", ev => {
 async function loadDriversList(){
   const data = await fetch("/drivers").then(r => r.json());
   const el = document.getElementById("d-list");
-  if(!data.length){ el.innerHTML = `<li style="color:var(--text-2)">No drivers added yet.</li>`; return; }
+  if(!data.length){
+    el.innerHTML = `<tr><td colspan="6" style="color:var(--text-2);text-align:center;padding:1rem">No drivers added yet.</td></tr>`;
+    return;
+  }
   el.innerHTML = data.map(d => `
-    <li id="d-item-${d.id}">
-      <div class="m-row">
-        <div>
-          <div><span class="m-no">${esc(d.driver_no)}</span>${esc(d.name)}</div>
-          <div class="m-dob">
-            ${d.dob ? `DOB: ${fmtDate(d.dob)} &nbsp;&middot;&nbsp; ` : ""}
-            ${d.latest_lesson != null ? `Latest with me: <strong>${d.latest_lesson}</strong> &nbsp;&middot;&nbsp; ` : "No lessons yet &nbsp;&middot;&nbsp; "}
-            With me: <strong>${d.lesson_count}</strong>
-          </div>
-        </div>
-        <div class="m-acts">
+    <tr id="d-item-${d.id}">
+      <td class="td-num">${esc(d.driver_no)}</td>
+      <td>${esc(d.name)}</td>
+      <td class="td-mute">${d.dob ? fmtDate(d.dob) : "—"}</td>
+      <td class="td-mute" style="text-align:center">${d.latest_lesson != null ? d.latest_lesson : "—"}</td>
+      <td class="td-mute" style="text-align:center">${d.lesson_count}</td>
+      <td>
+        <div class="td-acts">
           <button class="btn-icon d-edit-btn" aria-label="Edit"
             data-id="${d.id}" data-no="${esc(d.driver_no)}" data-name="${esc(d.name)}" data-dob="${d.dob||''}">
             <i class="bi bi-pencil"></i>
@@ -700,19 +724,23 @@ async function loadDriversList(){
             <i class="bi bi-trash3"></i>
           </button>
         </div>
-      </div>
-    </li>`).join("");
+      </td>
+    </tr>`).join("");
 }
 
 function editDriverInline(id, no, name, dob){
-  document.getElementById(`d-item-${id}`).innerHTML = `
-    <div class="m-edit-row">
-      <input class="fctl" id="de-no-${id}"   value="${esc(no)}"   placeholder="Driver No" style="max-width:95px">
-      <input class="fctl" id="de-name-${id}" value="${esc(name)}" placeholder="Full name">
-      <input type="date" class="fctl" id="de-dob-${id}" value="${dob}" style="max-width:145px">
-      <button class="btn-save-sm"   onclick="saveDriver(${id})">Save</button>
-      <button class="btn-cancel-sm" onclick="loadDriversList()">Cancel</button>
-    </div>`;
+  document.getElementById(`d-item-${id}`).outerHTML = `
+    <tr id="d-item-${id}" class="edit-row">
+      <td colspan="6">
+        <div class="edit-row-inner">
+          <input class="fctl" id="de-no-${id}"   value="${esc(no)}"   placeholder="Driver No" style="max-width:95px;flex:none">
+          <input class="fctl" id="de-name-${id}" value="${esc(name)}" placeholder="Full name">
+          <input type="date" class="fctl" id="de-dob-${id}" value="${dob}" style="max-width:145px;flex:none">
+          <button class="btn-save-sm"   onclick="saveDriver(${id})">Save</button>
+          <button class="btn-cancel-sm" onclick="loadDriversList()">Cancel</button>
+        </div>
+      </td>
+    </tr>`;
   document.getElementById(`de-name-${id}`).focus();
 }
 
@@ -765,15 +793,16 @@ document.getElementById("l-list").addEventListener("click", ev => {
 async function loadLogbooksList(){
   const data = await fetch("/logbooks").then(r => r.json());
   const el = document.getElementById("l-list");
-  if(!data.length){ el.innerHTML = `<li style="color:var(--text-2)">No logbooks added yet.</li>`; return; }
+  if(!data.length){
+    el.innerHTML = `<tr><td colspan="3" style="color:var(--text-2);text-align:center;padding:1rem">No logbooks added yet.</td></tr>`;
+    return;
+  }
   el.innerHTML = data.map(l => `
-    <li id="l-item-${l.id}">
-      <div class="m-row">
-        <div>
-          <div>${esc(l.logbook_no)}</div>
-          <div class="m-dob">${l.lesson_count} lesson${l.lesson_count !== 1 ? "s" : ""}</div>
-        </div>
-        <div class="m-acts">
+    <tr id="l-item-${l.id}">
+      <td>${esc(l.logbook_no)}</td>
+      <td class="td-mute" style="text-align:center">${l.lesson_count}</td>
+      <td>
+        <div class="td-acts">
           <button class="btn-icon l-edit-btn" aria-label="Edit"
             data-id="${l.id}" data-no="${esc(l.logbook_no)}">
             <i class="bi bi-pencil"></i>
@@ -783,17 +812,21 @@ async function loadLogbooksList(){
             <i class="bi bi-trash3"></i>
           </button>
         </div>
-      </div>
-    </li>`).join("");
+      </td>
+    </tr>`).join("");
 }
 
 function editLogbookInline(id, no){
-  document.getElementById(`l-item-${id}`).innerHTML = `
-    <div class="m-edit-row">
-      <input class="fctl" id="le-no-${id}" value="${esc(no)}" placeholder="Logbook No">
-      <button class="btn-save-sm"   onclick="saveLogbook(${id})">Save</button>
-      <button class="btn-cancel-sm" onclick="loadLogbooksList()">Cancel</button>
-    </div>`;
+  document.getElementById(`l-item-${id}`).outerHTML = `
+    <tr id="l-item-${id}" class="edit-row">
+      <td colspan="3">
+        <div class="edit-row-inner">
+          <input class="fctl" id="le-no-${id}" value="${esc(no)}" placeholder="Logbook No">
+          <button class="btn-save-sm"   onclick="saveLogbook(${id})">Save</button>
+          <button class="btn-cancel-sm" onclick="loadLogbooksList()">Cancel</button>
+        </div>
+      </td>
+    </tr>`;
   document.getElementById(`le-no-${id}`).focus();
 }
 
