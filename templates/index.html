@@ -558,22 +558,25 @@ async function loadFormData(){
 const searchEl = document.getElementById("driverSearch");
 const suggEl   = document.getElementById("suggestions");
 
-searchEl.addEventListener("input", function(){
-  const v = this.value.toLowerCase().trim();
-  if(!v || !drivers.length){ hideSugg(); return; }
-
-  const hits = drivers.filter(d =>
-    d.name.toLowerCase().includes(v) || d.driver_no.toLowerCase().includes(v)
-  ).slice(0, 8);
+function showSugg(){
+  if(!drivers.length){ hideSugg(); return; }
+  const v = searchEl.value.toLowerCase().trim();
+  const hits = v
+    ? drivers.filter(d => d.name.toLowerCase().includes(v) || d.driver_no.toLowerCase().includes(v))
+    : drivers;
 
   if(!hits.length){ hideSugg(); return; }
 
-  suggEl.innerHTML = hits.map(d => `
-    <li data-id="${d.id}" data-name="${esc(d.name)}" data-no="${esc(d.driver_no)}">
+  suggEl.innerHTML = hits.slice(0, 12).map(d => `
+    <li data-id="${d.id}" data-name="${esc(d.name)}" data-no="${esc(d.driver_no)}"
+        ${d.id === selDriver ? 'style="background:var(--accent-sub);font-weight:600"' : ''}>
       <span class="sugg-no">${esc(d.driver_no)}</span> &mdash; ${esc(d.name)}
     </li>`).join("");
   suggEl.classList.remove("hidden");
-});
+}
+
+searchEl.addEventListener("focus", showSugg);
+searchEl.addEventListener("input", showSugg);
 
 suggEl.addEventListener("click", ev => {
   const li = ev.target.closest("li[data-id]");
