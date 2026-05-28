@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS logbooks (
 
 CREATE TABLE IF NOT EXISTS lesson_types (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    number  INTEGER NOT NULL UNIQUE
+    number  INTEGER NOT NULL UNIQUE,
+    name    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS lessons (
@@ -29,6 +30,33 @@ CREATE TABLE IF NOT EXISTS lessons (
     created_at      TEXT NOT NULL
 );
 
--- Seed the 12 standard lesson types
-INSERT OR IGNORE INTO lesson_types (number) VALUES
-  (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12);
+-- Seed the 12 standard EDT lesson types
+INSERT OR IGNORE INTO lesson_types (number, name) VALUES
+  (1,  'Car Controls, Safety Checks & Legal Requirements'),
+  (2,  'Correct Positioning'),
+  (3,  'Changing Direction'),
+  (4,  'Progression'),
+  (5,  'Anticipation and Reaction'),
+  (6,  'Night Driving'),
+  (7,  'Eco-Friendly Driving'),
+  (8,  'Motorway Driving'),
+  (9,  'Urban Driving'),
+  (10, 'Adverse Weather Conditions'),
+  (11, 'Safety Topics & Sharing the Road'),
+  (12, 'Post-Test Driving');
+
+-- Backfill names for rows inserted before this column existed
+UPDATE lesson_types SET name = CASE number
+  WHEN 1  THEN 'Car Controls, Safety Checks & Legal Requirements'
+  WHEN 2  THEN 'Correct Positioning'
+  WHEN 3  THEN 'Changing Direction'
+  WHEN 4  THEN 'Progression'
+  WHEN 5  THEN 'Anticipation and Reaction'
+  WHEN 6  THEN 'Night Driving'
+  WHEN 7  THEN 'Eco-Friendly Driving'
+  WHEN 8  THEN 'Motorway Driving'
+  WHEN 9  THEN 'Urban Driving'
+  WHEN 10 THEN 'Adverse Weather Conditions'
+  WHEN 11 THEN 'Safety Topics & Sharing the Road'
+  WHEN 12 THEN 'Post-Test Driving'
+END WHERE name IS NULL;

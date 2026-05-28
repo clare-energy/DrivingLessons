@@ -458,6 +458,7 @@ async function load(){
         <span class="badge-lesson">Lesson ${esc(String(l.lesson_number))}</span>
         <span class="date-txt">${fmtDate(l.lesson_date)}</span>
       </div>
+      ${l.lesson_name ? `<div style="font-size:0.8rem;color:var(--text-2);margin-top:0.25rem">${esc(l.lesson_name)}</div>` : ''}
       <div style="margin-top:0.75rem">
         <div class="prog-meta">
           <span>EDT Progress</span>
@@ -477,7 +478,10 @@ async function load(){
         <div class="td-name">${esc(l.name)}</div>
         <div class="td-sub">${esc(l.driver_no)}</div>
       </td>
-      <td><span class="badge-lesson">Lesson ${esc(String(l.lesson_number))}</span></td>
+      <td>
+        <span class="badge-lesson">Lesson ${esc(String(l.lesson_number))}</span>
+        ${l.lesson_name ? `<div class="td-sub" style="margin-top:0.2rem">${esc(l.lesson_name)}</div>` : ''}
+      </td>
       <td class="td-mute">${fmtDate(l.lesson_date)}</td>
       <td class="td-mute">${esc(l.logbook_no)}</td>
       <td>
@@ -530,7 +534,7 @@ async function loadFormData(){
       : `<option value="">— Add a logbook first —</option>`;
 
   document.getElementById("sel-lesson").innerHTML =
-    types.map(t => `<option value="${t.id}">${t.number}</option>`).join("");
+    types.map(t => `<option value="${t.id}">${t.number} — ${esc(t.name ?? '')}</option>`).join("");
 }
 
 /* ── AUTOCOMPLETE ─────────────────────────────────────────────── */

@@ -27,6 +27,7 @@ def get_lessons():
             SELECT l.id, l.driver_id, l.logbook_id, l.lesson_type_id,
                    d.driver_no, d.name,
                    lt.number AS lesson_number,
+                   lt.name   AS lesson_name,
                    l.lesson_date,
                    lb.logbook_no,
                    (
@@ -172,7 +173,7 @@ def add_logbook():
 @app.route("/lesson_types")
 def get_types():
     with closing(get_db()) as conn:
-        rows = conn.execute("SELECT id, number FROM lesson_types ORDER BY number").fetchall()
+        rows = conn.execute("SELECT id, number, name FROM lesson_types ORDER BY number").fetchall()
     return jsonify([dict(r) for r in rows])
 
 
