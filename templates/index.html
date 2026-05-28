@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDT Lesson Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+/* ── TOKENS ─────────────────────────────────────────────────── */
+:root {
+  --bg:          oklch(97%   0.006 200);
+  --surface:     oklch(99.5% 0.003 200);
+  --border:      oklch(90%   0.008 200);
+  --border-lite: oklch(94%   0.005 200);
+  --text:        oklch(16%   0.012 240);
+  --text-2:      oklch(50%   0.014 220);
+  --accent:      oklch(38%   0.13  195);
+  --accent-h:    oklch(32%   0.13  195);
+  --accent-sub:  oklch(95%   0.04  195);
+  --accent-t:    oklch(28%   0.13  195);
+  --hdr-bg:      oklch(21%   0.085 195);
+  --hdr-text:    oklch(96%   0.010 195);
+  --danger:      oklch(44%   0.15   22);
+  --danger-h:    oklch(38%   0.15   22);
+  --prog-bg:     oklch(91%   0.010 195);
+  --sh-sm: 0 1px 3px oklch(16% 0.01 240/.07), 0 1px 2px oklch(16% 0.01 240/.04);
+  --sh-md: 0 4px 14px oklch(16% 0.01 240/.09), 0 1px 4px oklch(16% 0.01 240/.04);
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 15px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.hdr {
+  background: var(--hdr-bg);
+  color: var(--hdr-text);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 0.8rem 1rem;
+  box-shadow: 0 2px 8px oklch(0% 0 0 / .28);
+}
+.hdr-inner {
+  max-width: 920px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+}
+.brand {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-weight: 600; font-size: 1rem;
+  color: var(--hdr-text); text-decoration: none; letter-spacing: -0.01em;
+}
+.brand-icon {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: oklch(38% 0.13 195 / .45);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; flex-shrink: 0;
+}
+.edt-tag {
+  font-size: 0.675rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  background: oklch(38% 0.13 195 / .3); border: 1px solid oklch(55% 0.10 195 / .35);
+  color: oklch(85% 0.05 195); padding: 0.15rem 0.45rem; border-radius: 4px;
+}
+.btn-hdr {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: oklch(38% 0.13 195 / .22); border: 1px solid oklch(55% 0.10 195 / .38);
+  color: var(--hdr-text); border-radius: var(--r-sm);
+  font-size: 0.8125rem; font-weight: 500; font-family: inherit; cursor: pointer;
+  transition: background 0.15s; line-height: 1;
+}
+.btn-hdr:hover { background: oklch(38% 0.13 195 / .38); color: var(--hdr-text); }
+
+/* ── LAYOUT ─────────────────────────────────────────────────── */
+.main { max-width: 920px; margin: 0 auto; padding: 1rem 1rem 5.5rem; }
+@media (min-width: 768px) { .main { padding: 1.5rem 1.5rem 2.5rem; } }
+
+/* ── VISIBILITY ─────────────────────────────────────────────── */
+/* mob-only / desk-only handle the responsive split.
+   .hidden is defined LAST so its !important wins over desk-only. */
+.mob-only  { display: block; }
+.desk-only { display: none !important; }
+@media (min-width: 768px) {
+  .mob-only  { display: none !important; }
+  .desk-only { display: block !important; }
+}
+.hidden { display: none !important; }
+
+/* ── STATES ──────────────────────────────────────────────────── */
+.state-box { padding: 3.5rem 1rem; text-align: center; color: var(--text-2); }
+.state-box .si { font-size: 2.25rem; opacity: .35; display: block; margin-bottom: 0.6rem; }
+.state-box p { margin: 0; font-size: 0.9375rem; }
+.state-box small { font-size: 0.8125rem; }
+
+/* ── LESSON CARDS (mobile) ─────────────────────────────────── */
+.card-stack { display: flex; flex-direction: column; gap: 0.625rem; }
+.lcard {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 0.875rem 1rem; box-shadow: var(--sh-sm);
+}
+.lcard-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.lcard-name { font-weight: 600; font-size: 0.9375rem; line-height: 1.3; }
+.lcard-meta { font-size: 0.8rem; color: var(--text-2); margin-top: 0.2rem; }
+.lcard-row  { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
+.btn-acts   { display: flex; gap: 0.375rem; flex-shrink: 0; }
+
+/* ── TABLE (desktop) ───────────────────────────────────────── */
+.tbl-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--sh-sm); overflow: hidden;
+}
+.dtable { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.dtable thead tr { background: oklch(97.5% 0.007 200); border-bottom: 1px solid var(--border); }
+.dtable th {
+  font-size: 0.725rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-2); padding: 0.75rem 1rem; white-space: nowrap;
+}
+.dtable td {
+  padding: 0.875rem 1rem; border-bottom: 1px solid var(--border-lite); vertical-align: middle;
+}
+.dtable tbody tr:last-child td { border-bottom: none; }
+.dtable tbody tr:hover td { background: oklch(98.5% 0.005 200); }
+.td-name  { font-weight: 600; }
+.td-sub   { font-size: 0.75rem; color: var(--text-2); margin-top: 0.1rem; }
+.td-mute  { color: var(--text-2); font-size: 0.875rem; }
+.tbl-acts { display: flex; gap: 0.375rem; justify-content: flex-end; }
+.tbl-prog { display: flex; align-items: center; gap: 0.625rem; min-width: 130px; }
+.tbl-prog .prog-track { flex: 1; }
+.prog-count { font-size: 0.75rem; font-weight: 600; color: var(--text-2); white-space: nowrap; min-width: 2.75rem; text-align: right; }
+
+/* ── SHARED ATOMS ──────────────────────────────────────────── */
+.badge-lesson {
+  display: inline-flex; align-items: center;
+  background: var(--accent-sub); color: var(--accent-t);
+  font-size: 0.74rem; font-weight: 700;
+  padding: 0.2rem 0.55rem; border-radius: 4px; letter-spacing: 0.02em; white-space: nowrap;
+}
+.date-txt { font-size: 0.8125rem; color: var(--text-2); }
+.prog-track { height: 5px; background: var(--prog-bg); border-radius: 9999px; overflow: hidden; }
+.prog-fill  { height: 100%; background: var(--accent); border-radius: 9999px; transition: width .4s cubic-bezier(.16,1,.3,1); }
+.prog-meta  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+.prog-meta span { font-size: 0.75rem; color: var(--text-2); font-weight: 500; }
+.prog-hi    { color: var(--accent) !important; font-weight: 700 !important; }
+
+.btn-icon {
+  width: 33px; height: 33px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; transition: all 0.12s; padding: 0;
+}
+.btn-icon:hover { background: var(--bg); color: var(--text); border-color: oklch(83% 0.012 220); }
+.btn-icon.del:hover { background: oklch(97.5% 0.014 22); color: var(--danger); border-color: oklch(87% 0.04 22); }
+
+/* ── FAB ───────────────────────────────────────────────────── */
+.fab {
+  position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 40;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: var(--hdr-text); border: none; cursor: pointer;
+  box-shadow: 0 4px 16px oklch(38% 0.13 195 / .45), 0 2px 4px oklch(38% 0.13 195 / .25);
+  font-size: 1.25rem; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+}
+.fab:hover { background: var(--accent-h); }
+.fab:active { transform: scale(0.94); }
+
+/* ── MODALS ────────────────────────────────────────────────── */
+.modal-content { border: none; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-md); overflow: hidden; }
+.modal-header  { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); background: oklch(98% 0.005 200); }
+.modal-title   { font-weight: 600; font-size: 0.9375rem; color: var(--text); margin: 0; }
+.modal-body    { padding: 1.25rem; }
+
+/* ── FORMS ─────────────────────────────────────────────────── */
+.flabel { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--text); margin-bottom: 0.35rem; }
+.fctl {
+  width: 100%; padding: 0.625rem 0.75rem; font-size: 0.9375rem; font-family: inherit;
+  color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none; -webkit-appearance: none;
+}
+.fctl:focus { border-color: var(--accent); box-shadow: 0 0 0 3px oklch(38% 0.13 195 / .12); }
+.fctl.err   { border-color: var(--danger); box-shadow: 0 0 0 3px oklch(44% 0.15 22 / .10); }
+select.fctl {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2.25rem; cursor: pointer;
+}
+.frow { margin-bottom: 1rem; }
+
+.btn-save {
+  display: block; width: 100%; padding: 0.7rem 1rem;
+  background: var(--accent); color: var(--hdr-text);
+  font-size: 0.9375rem; font-weight: 600; font-family: inherit;
+  border: none; border-radius: var(--r-sm); cursor: pointer; transition: background 0.15s;
+}
+.btn-save:hover { background: var(--accent-h); }
+
+/* ── AUTOCOMPLETE ──────────────────────────────────────────── */
+.sugg-list {
+  list-style: none; padding: 0; margin: 0.25rem 0 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  overflow: hidden; box-shadow: var(--sh-md); max-height: 210px; overflow-y: auto;
+}
+.sugg-list li { padding: 0.6rem 0.75rem; cursor: pointer; font-size: 0.875rem; color: var(--text); border-bottom: 1px solid var(--border-lite); transition: background 0.1s; }
+.sugg-list li:last-child { border-bottom: none; }
+.sugg-list li:hover { background: oklch(96% 0.02 200); }
+.sugg-no { font-weight: 600; color: var(--accent); }
+
+/* ── MANAGE MODALS ─────────────────────────────────────────── */
+.add-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.add-row .fctl { flex: 1; min-width: 80px; }
+.btn-add {
+  padding: 0.625rem 0.875rem; background: var(--accent); color: var(--hdr-text);
+  border: none; border-radius: var(--r-sm); font-size: 0.875rem; font-weight: 600;
+  font-family: inherit; cursor: pointer; flex-shrink: 0; transition: background 0.15s; white-space: nowrap;
+}
+.btn-add:hover { background: var(--accent-h); }
+.mlist { list-style: none; padding: 0; margin: 0; }
+.mlist li { padding: 0.5rem 0; border-bottom: 1px solid var(--border-lite); font-size: 0.875rem; color: var(--text); line-height: 1.4; }
+.mlist li:last-child { border-bottom: none; }
+.m-no  { font-weight: 600; color: var(--accent); font-size: 0.8rem; margin-right: 0.25rem; }
+.m-dob { font-size: 0.775rem; color: var(--text-2); margin-top: 0.1rem; }
+
+/* ── DROPDOWN ──────────────────────────────────────────────── */
+.dropdown-menu { border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 0.375rem; min-width: 195px; }
+.dropdown-item { border-radius: 6px; font-size: 0.875rem; padding: 0.5rem 0.75rem; color: var(--text); }
+.dropdown-item:hover { background: oklch(96% 0.01 200); color: var(--text); }
+.dropdown-divider { border-color: var(--border-lite); margin: 0.3rem 0.5rem; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────── -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div style="display:flex;align-items:center;gap:0.625rem">
+      <a href="/" class="brand">
+        <span class="brand-icon"><i class="bi bi-car-front-fill"></i></span>
+        EDT Tracker
+      </a>
+      <span class="edt-tag">Ireland</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <button class="btn-hdr desk-only" onclick="openLesson()">
+        <i class="bi bi-plus-lg"></i> New Lesson
+      </button>
+      <div class="dropdown">
+        <button class="btn-hdr" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#" onclick="openDrivers();return false">
+            <i class="bi bi-person me-2" style="color:var(--text-2)"></i>Manage Drivers
+          </a></li>
+          <li><a class="dropdown-item" href="#" onclick="openLogbooks();return false">
+            <i class="bi bi-journal-bookmark me-2" style="color:var(--text-2)"></i>Manage Logbooks
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="exportCSV();return false">
+            <i class="bi bi-arrow-down-circle me-2" style="color:var(--text-2)"></i>Export CSV
+          </a></li>
+          <li><a class="dropdown-item" href="#" onclick="csvFile.click();return false">
+            <i class="bi bi-arrow-up-circle me-2" style="color:var(--text-2)"></i>Import CSV
+          </a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>
+
+<input type="file" id="csvFile" style="display:none" accept=".csv">
+
+<!-- ── MAIN ───────────────────────────────────────────────── -->
+<main class="main">
+
+  <div id="s-loading" class="state-box">
+    <i class="bi bi-arrow-repeat si" style="animation:spin 1s linear infinite"></i>
+    <p>Loading lessons…</p>
+  </div>
+
+  <div id="s-empty" class="state-box hidden">
+    <i class="bi bi-clipboard2-x si"></i>
+    <p>No lessons recorded yet.</p>
+    <p><small>Tap <strong>+</strong> to log the first lesson.</small></p>
+  </div>
+
+  <div id="card-stack" class="card-stack mob-only hidden"></div>
+
+  <div id="tbl-wrap" class="tbl-wrap desk-only hidden">
+    <table class="dtable">
+      <thead><tr>
+        <th>Driver</th><th>Lesson</th><th>Date</th>
+        <th>Logbook</th><th>EDT Progress</th><th></th>
+      </tr></thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- FAB -->
+<button class="fab mob-only" onclick="openLesson()" aria-label="Log new lesson">
+  <i class="bi bi-plus-lg"></i>
+</button>
+
+
+<!-- ── LESSON MODAL ────────────────────────────────────────── -->
+<div class="modal fade" id="lessonModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+  <div class="modal-header">
+    <h5 class="modal-title" id="lesson-modal-title">Log a Lesson</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="frow">
+      <label class="flabel" for="driverSearch">Driver</label>
+      <input id="driverSearch" class="fctl" placeholder="Search by name or number…" autocomplete="off">
+      <ul id="suggestions" class="sugg-list hidden"></ul>
+    </div>
+    <div class="frow">
+      <label class="flabel" for="sel-logbook">Logbook</label>
+      <select id="sel-logbook" class="fctl"></select>
+    </div>
+    <div class="frow">
+      <label class="flabel" for="sel-lesson">Lesson</label>
+      <select id="sel-lesson" class="fctl"></select>
+    </div>
+    <div class="frow" style="margin-bottom:1.25rem">
+      <label class="flabel" for="sel-date">Date</label>
+      <input type="date" id="sel-date" class="fctl">
+    </div>
+    <button class="btn-save" onclick="saveLesson()">Save Lesson</button>
+  </div>
+</div>
+</div>
+</div>
+
+
+<!-- ── DRIVERS MODAL ───────────────────────────────────────── -->
+<div class="modal fade" id="driversModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+  <div class="modal-header">
+    <h5 class="modal-title">Manage Drivers</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="add-row">
+      <input id="d-no"   class="fctl" placeholder="Driver No" style="max-width:100px;flex:none">
+      <input id="d-name" class="fctl" placeholder="Full name">
+      <input type="date" id="d-dob" class="fctl" style="max-width:155px;flex:none" title="Date of birth">
+      <button class="btn-add" onclick="addDriver()">Add</button>
+    </div>
+    <ul id="d-list" class="mlist"></ul>
+  </div>
+</div>
+</div>
+</div>
+
+
+<!-- ── LOGBOOKS MODAL ──────────────────────────────────────── -->
+<div class="modal fade" id="logbooksModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+  <div class="modal-header">
+    <h5 class="modal-title">Manage Logbooks</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="add-row">
+      <input id="l-no" class="fctl" placeholder="Logbook No">
+      <button class="btn-add" onclick="addLogbook()">Add</button>
+    </div>
+    <ul id="l-list" class="mlist"></ul>
+  </div>
+</div>
+</div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+const modalLesson   = new bootstrap.Modal(document.getElementById("lessonModal"));
+const modalDrivers  = new bootstrap.Modal(document.getElementById("driversModal"));
+const modalLogbooks = new bootstrap.Modal(document.getElementById("logbooksModal"));
+
+let drivers     = [];
+let lessonTypes = [];
+let selDriver   = null;
+let editingId   = null;
+
+/* ── UTILS ──────────────────────────────────────────────────── */
+
+function esc(s){
+  return String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function fmtDate(iso){
+  if(!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function show(state){
+  document.getElementById("s-loading").classList.toggle("hidden", state !== "loading");
+  document.getElementById("s-empty").classList.toggle("hidden",   state !== "empty");
+  document.getElementById("card-stack").classList.toggle("hidden", state !== "data");
+  document.getElementById("tbl-wrap").classList.toggle("hidden",   state !== "data");
+}
+
+/* ── LOAD ───────────────────────────────────────────────────── */
+
+async function load(){
+  show("loading");
+
+  const [data, types] = await Promise.all([
+    fetch("/lessons").then(r => r.json()),
+    fetch("/lesson_types").then(r => r.json())
+  ]);
+  lessonTypes = types;
+  const total = types.length;
+
+  if(!data.length){ show("empty"); return; }
+  show("data");
+
+  // Cards (mobile)
+  document.getElementById("card-stack").innerHTML = data.map(l => {
+    const pct = total ? Math.round(((l.max_lesson || 0) / total) * 100) : 0;
+    return `
+    <div class="lcard">
+      <div class="lcard-top">
+        <div>
+          <div class="lcard-name">${esc(l.name)}</div>
+          <div class="lcard-meta">${esc(l.driver_no)} &middot; ${esc(l.logbook_no)}</div>
+        </div>
+        <div class="btn-acts">
+          <button class="btn-icon" onclick="editLesson(${l.id})" aria-label="Edit lesson">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn-icon del" onclick="deleteLesson(${l.id})" aria-label="Delete lesson">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>
+      <div class="lcard-row">
+        <span class="badge-lesson">Lesson ${esc(String(l.lesson_number))}</span>
+        <span class="date-txt">${fmtDate(l.lesson_date)}</span>
+      </div>
+      <div style="margin-top:0.75rem">
+        <div class="prog-meta">
+          <span>EDT Progress</span>
+          <span class="prog-hi">${l.max_lesson || 0}&thinsp;/&thinsp;${total}</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Table (desktop)
+  document.getElementById("tbl-body").innerHTML = data.map(l => {
+    const pct = total ? Math.round(((l.max_lesson || 0) / total) * 100) : 0;
+    return `
+    <tr>
+      <td>
+        <div class="td-name">${esc(l.name)}</div>
+        <div class="td-sub">${esc(l.driver_no)}</div>
+      </td>
+      <td><span class="badge-lesson">Lesson ${esc(String(l.lesson_number))}</span></td>
+      <td class="td-mute">${fmtDate(l.lesson_date)}</td>
+      <td class="td-mute">${esc(l.logbook_no)}</td>
+      <td>
+        <div class="tbl-prog">
+          <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+          <span class="prog-count">${l.max_lesson || 0}&thinsp;/&thinsp;${total}</span>
+        </div>
+      </td>
+      <td>
+        <div class="tbl-acts">
+          <button class="btn-icon" onclick="editLesson(${l.id})" aria-label="Edit">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn-icon del" onclick="deleteLesson(${l.id})" aria-label="Delete">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+/* ── LESSON FORM ─────────────────────────────────────────────── */
+
+async function openLesson(){
+  editingId = null;
+  selDriver = null;
+  document.getElementById("lesson-modal-title").textContent = "Log a Lesson";
+  document.getElementById("driverSearch").value = "";
+  document.getElementById("driverSearch").classList.remove("err");
+  document.getElementById("sel-date").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("sel-date").classList.remove("err");
+  hideSugg();
+  await loadFormData();
+  modalLesson.show();
+}
+
+async function loadFormData(){
+  const [drvs, logs, types] = await Promise.all([
+    fetch("/drivers").then(r => r.json()),
+    fetch("/logbooks").then(r => r.json()),
+    fetch("/lesson_types").then(r => r.json())
+  ]);
+  drivers     = drvs;
+  lessonTypes = types;
+
+  document.getElementById("sel-logbook").innerHTML =
+    logs.length
+      ? logs.map(l => `<option value="${l.id}">${esc(l.logbook_no)}</option>`).join("")
+      : `<option value="">— Add a logbook first —</option>`;
+
+  document.getElementById("sel-lesson").innerHTML =
+    types.map(t => `<option value="${t.id}">${t.number}</option>`).join("");
+}
+
+/* ── AUTOCOMPLETE ─────────────────────────────────────────────── */
+
+const searchEl = document.getElementById("driverSearch");
+const suggEl   = document.getElementById("suggestions");
+
+searchEl.addEventListener("input", function(){
+  const v = this.value.toLowerCase().trim();
+  if(!v || !drivers.length){ hideSugg(); return; }
+
+  const hits = drivers.filter(d =>
+    d.name.toLowerCase().includes(v) || d.driver_no.toLowerCase().includes(v)
+  ).slice(0, 8);
+
+  if(!hits.length){ hideSugg(); return; }
+
+  suggEl.innerHTML = hits.map(d => `
+    <li data-id="${d.id}" data-name="${esc(d.name)}" data-no="${esc(d.driver_no)}">
+      <span class="sugg-no">${esc(d.driver_no)}</span> &mdash; ${esc(d.name)}
+    </li>`).join("");
+  suggEl.classList.remove("hidden");
+});
+
+suggEl.addEventListener("click", ev => {
+  const li = ev.target.closest("li[data-id]");
+  if(li) pickDriver(parseInt(li.dataset.id), li.dataset.name, li.dataset.no);
+});
+
+document.addEventListener("click", ev => {
+  if(!searchEl.contains(ev.target) && !suggEl.contains(ev.target)) hideSugg();
+});
+
+function hideSugg(){ suggEl.classList.add("hidden"); }
+
+async function pickDriver(id, name, no){
+  selDriver = id;
+  searchEl.value = `${no} — ${name}`;
+  searchEl.classList.remove("err");
+  hideSugg();
+
+  const prog = await fetch("/driver_progress/" + id).then(r => r.json());
+  const match = lessonTypes.find(t => t.number === prog.next_lesson);
+  if(match) document.getElementById("sel-lesson").value = match.id;
+}
+
+/* ── SAVE ─────────────────────────────────────────────────────── */
+
+async function saveLesson(){
+  let valid = true;
+  if(!selDriver){
+    searchEl.classList.add("err"); searchEl.focus(); valid = false;
+  }
+  const dateVal = document.getElementById("sel-date").value;
+  if(!dateVal){
+    document.getElementById("sel-date").classList.add("err");
+    if(valid) document.getElementById("sel-date").focus();
+    valid = false;
+  }
+  if(!valid) return;
+
+  searchEl.classList.remove("err");
+  document.getElementById("sel-date").classList.remove("err");
+
+  const payload = {
+    driver_id:      selDriver,
+    logbook_id:     parseInt(document.getElementById("sel-logbook").value),
+    lesson_type_id: parseInt(document.getElementById("sel-lesson").value),
+    lesson_date:    dateVal
+  };
+
+  await fetch(editingId ? `/lessons/${editingId}` : "/lessons", {
+    method:  editingId ? "PUT" : "POST",
+    headers: {"Content-Type": "application/json"},
+    body:    JSON.stringify(payload)
+  });
+
+  modalLesson.hide();
+  load();
+}
+
+/* ── DELETE ───────────────────────────────────────────────────── */
+
+async function deleteLesson(id){
+  if(!confirm("Delete this lesson?")) return;
+  await fetch(`/lessons/${id}`, { method: "DELETE" });
+  load();
+}
+
+/* ── EDIT ─────────────────────────────────────────────────────── */
+
+async function editLesson(id){
+  const l = await fetch(`/lessons/${id}`).then(r => r.json());
+  editingId = id;
+  selDriver = l.driver_id;
+
+  document.getElementById("lesson-modal-title").textContent = "Edit Lesson";
+  await loadFormData();
+
+  const d = drivers.find(x => x.id === l.driver_id);
+  searchEl.value = d ? `${d.driver_no} — ${d.name}` : "";
+  hideSugg();
+
+  document.getElementById("sel-logbook").value = l.logbook_id;
+  document.getElementById("sel-lesson").value  = l.lesson_type_id;
+  document.getElementById("sel-date").value    = l.lesson_date;
+
+  modalLesson.show();
+}
+
+/* ── DRIVERS ──────────────────────────────────────────────────── */
+
+function openDrivers(){ loadDriversList(); modalDrivers.show(); }
+
+async function loadDriversList(){
+  const data = await fetch("/drivers").then(r => r.json());
+  document.getElementById("d-list").innerHTML = data.length
+    ? data.map(d => `
+        <li>
+          <div><span class="m-no">${esc(d.driver_no)}</span>${esc(d.name)}</div>
+          ${d.dob ? `<div class="m-dob">DOB: ${fmtDate(d.dob)}</div>` : ""}
+        </li>`).join("")
+    : `<li style="color:var(--text-2)">No drivers added yet.</li>`;
+}
+
+async function addDriver(){
+  const no   = document.getElementById("d-no").value.trim();
+  const name = document.getElementById("d-name").value.trim();
+  const dob  = document.getElementById("d-dob").value || null;
+  if(!no || !name) return;
+
+  await fetch("/drivers", {
+    method:  "POST",
+    headers: {"Content-Type": "application/json"},
+    body:    JSON.stringify({ driver_no: no, name, dob })
+  });
+  document.getElementById("d-no").value   = "";
+  document.getElementById("d-name").value = "";
+  document.getElementById("d-dob").value  = "";
+  loadDriversList();
+}
+
+/* ── LOGBOOKS ─────────────────────────────────────────────────── */
+
+function openLogbooks(){ loadLogbooksList(); modalLogbooks.show(); }
+
+async function loadLogbooksList(){
+  const data = await fetch("/logbooks").then(r => r.json());
+  document.getElementById("l-list").innerHTML = data.length
+    ? data.map(l => `<li>${esc(l.logbook_no)}</li>`).join("")
+    : `<li style="color:var(--text-2)">No logbooks added yet.</li>`;
+}
+
+async function addLogbook(){
+  const no = document.getElementById("l-no").value.trim();
+  if(!no) return;
+  await fetch("/logbooks", {
+    method:  "POST",
+    headers: {"Content-Type": "application/json"},
+    body:    JSON.stringify({ logbook_no: no })
+  });
+  document.getElementById("l-no").value = "";
+  loadLogbooksList();
+}
+
+/* ── CSV ──────────────────────────────────────────────────────── */
+
+function exportCSV(){ window.location = "/export"; }
+
+document.getElementById("csvFile").addEventListener("change", async function(){
+  if(!this.files[0]) return;
+  const form = new FormData();
+  form.append("file", this.files[0]);
+  const res  = await fetch("/import", { method: "POST", body: form });
+  const data = await res.json();
+  const skip = data.skipped ? `, ${data.skipped} skipped` : "";
+  alert(`Import complete: ${data.imported} lesson${data.imported !== 1 ? "s" : ""} imported${skip}.`);
+  this.value = "";
+  load();
+});
+
+/* ── INIT ─────────────────────────────────────────────────────── */
+load();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+bin/
+include/
+lib/
+lib64/
+pyvenv.cfg
+
+# Database
+*.db
+
+# Old root-level HTML (app uses templates/)
+/index.html
