@@ -133,7 +133,16 @@ def driver_progress(driver_id):
 @app.route("/drivers")
 def get_drivers():
     with closing(get_db()) as conn:
-        rows = conn.execute("SELECT * FROM drivers ORDER BY name").fetchall()
+        rows = conn.execute("""
+            SELECT d.*,
+                   COUNT(l.id)    AS lesson_count,
+                   MAX(lt.number) AS latest_lesson
+            FROM drivers d
+            LEFT JOIN lessons l       ON l.driver_id      = d.id
+            LEFT JOIN lesson_types lt ON l.lesson_type_id = lt.id
+            GROUP BY d.id
+            ORDER BY d.name
+        """).fetchall()
     return jsonify([dict(r) for r in rows])
 
 
@@ -174,7 +183,14 @@ def delete_driver(id):
 @app.route("/logbooks")
 def get_logbooks():
     with closing(get_db()) as conn:
-        rows = conn.execute("SELECT * FROM logbooks ORDER BY logbook_no").fetchall()
+        rows = conn.execute("""
+            SELECT lb.*,
+                   COUNT(l.id) AS lesson_count
+            FROM logbooks lb
+            LEFT JOIN lessons l ON l.logbook_id = lb.id
+            GROUP BY lb.id
+            ORDER BY lb.logbook_no
+        """).fetchall()
     return jsonify([dict(r) for r in rows])
 
 

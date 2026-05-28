@@ -684,7 +684,11 @@ async function loadDriversList(){
       <div class="m-row">
         <div>
           <div><span class="m-no">${esc(d.driver_no)}</span>${esc(d.name)}</div>
-          ${d.dob ? `<div class="m-dob">DOB: ${fmtDate(d.dob)}</div>` : ""}
+          <div class="m-dob">
+            ${d.dob ? `DOB: ${fmtDate(d.dob)} &nbsp;&middot;&nbsp; ` : ""}
+            ${d.latest_lesson != null ? `Last lesson: <strong>${d.latest_lesson}</strong> &nbsp;&middot;&nbsp; ` : "No lessons yet &nbsp;&middot;&nbsp; "}
+            With me: <strong>${d.lesson_count}</strong>
+          </div>
         </div>
         <div class="m-acts">
           <button class="btn-icon d-edit-btn" aria-label="Edit"
@@ -765,7 +769,10 @@ async function loadLogbooksList(){
   el.innerHTML = data.map(l => `
     <li id="l-item-${l.id}">
       <div class="m-row">
-        <span>${esc(l.logbook_no)}</span>
+        <div>
+          <div>${esc(l.logbook_no)}</div>
+          <div class="m-dob">${l.lesson_count} lesson${l.lesson_count !== 1 ? "s" : ""}</div>
+        </div>
         <div class="m-acts">
           <button class="btn-icon l-edit-btn" aria-label="Edit"
             data-id="${l.id}" data-no="${esc(l.logbook_no)}">
