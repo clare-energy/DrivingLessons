@@ -253,6 +253,17 @@ select.fctl {
 }
 .btn-cancel-sm:hover { background: var(--bg); color: var(--text); }
 
+/* ── SORTABLE HEADERS ──────────────────────────────────────── */
+.sortable {
+  cursor: pointer; user-select: none;
+  white-space: nowrap;
+}
+.sortable:hover { color: var(--text); }
+.sort-icon { margin-left: 0.3rem; opacity: 0.35; vertical-align: middle; }
+.sortable.sort-asc  .sort-icon::after { content: "↑"; opacity: 1; color: var(--accent); }
+.sortable.sort-desc .sort-icon::after { content: "↓"; opacity: 1; color: var(--accent); }
+.sortable:not(.sort-asc):not(.sort-desc) .sort-icon::after { content: "↕"; }
+
 /* ── DROPDOWN ──────────────────────────────────────────────── */
 .dropdown-menu { border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 0.375rem; min-width: 195px; }
 .dropdown-item { border-radius: 6px; font-size: 0.875rem; padding: 0.5rem 0.75rem; color: var(--text); }
@@ -323,8 +334,12 @@ select.fctl {
   <div id="tbl-wrap" class="tbl-wrap desk-only hidden">
     <table class="dtable">
       <thead><tr>
-        <th>Driver</th><th>Lesson</th><th>Date</th>
-        <th>Logbook</th><th>EDT Progress</th><th></th>
+        <th class="sortable" data-col="name" id="th-name">Driver <span class="sort-icon"></span></th>
+        <th>Lesson</th>
+        <th class="sortable" data-col="lesson_date" id="th-lesson_date">Date <span class="sort-icon"></span></th>
+        <th class="sortable" data-col="logbook_no" id="th-logbook_no">Logbook <span class="sort-icon"></span></th>
+        <th>EDT Progress</th>
+        <th></th>
       </tr></thead>
       <tbody id="tbl-body"></tbody>
     </table>
@@ -436,8 +451,11 @@ const modalLogbooks = new bootstrap.Modal(document.getElementById("logbooksModal
 
 let drivers     = [];
 let lessonTypes = [];
+let allLessons  = [];
 let selDriver   = null;
 let editingId   = null;
+let sortCol     = "lesson_date";
+let sortDir     = "desc";
 
 /* ── UTILS ──────────────────────────────────────────────────── */
 
@@ -460,6 +478,37 @@ function show(state){
   document.getElementById("tbl-wrap").classList.toggle("hidden",   state !== "data");
 }
 
+/* ── SORT ───────────────────────────────────────────────────── */
+
+function sortedLessons(){
+  return [...allLessons].sort((a, b) => {
+    let va, vb;
+    if(sortCol === "name")        { va = a.name.toLowerCase();        vb = b.name.toLowerCase(); }
+    else if(sortCol === "lesson_date") { va = a.lesson_date;          vb = b.lesson_date; }
+    else if(sortCol === "logbook_no")  { va = a.logbook_no.toLowerCase(); vb = b.logbook_no.toLowerCase(); }
+    else return 0;
+    if(va < vb) return sortDir === "asc" ? -1 : 1;
+    if(va > vb) return sortDir === "asc" ?  1 : -1;
+    return 0;
+  });
+}
+
+function setSort(col){
+  if(sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+  else { sortCol = col; sortDir = "asc"; }
+  updateSortHeaders();
+  render(sortedLessons());
+}
+
+function updateSortHeaders(){
+  ["name","lesson_date","logbook_no"].forEach(col => {
+    const th = document.getElementById(`th-${col}`);
+    if(!th) return;
+    th.classList.remove("sort-asc","sort-desc");
+    if(sortCol === col) th.classList.add(sortDir === "asc" ? "sort-asc" : "sort-desc");
+  });
+}
+
 /* ── LOAD ───────────────────────────────────────────────────── */
 
 async function load(){
@@ -470,10 +519,16 @@ async function load(){
     fetch("/lesson_types").then(r => r.json())
   ]);
   lessonTypes = types;
-  const total = types.length;
+  allLessons  = data;
 
   if(!data.length){ show("empty"); return; }
   show("data");
+  updateSortHeaders();
+  render(sortedLessons());
+}
+
+function render(data){
+  const total = lessonTypes.length;
 
   // Cards (mobile)
   document.getElementById("card-stack").innerHTML = data.map(l => {
@@ -873,6 +928,11 @@ document.getElementById("csvFile").addEventListener("change", async function(){
   alert(`Import complete: ${data.imported} lesson${data.imported !== 1 ? "s" : ""} imported${skip}.`);
   this.value = "";
   load();
+});
+
+/* ── SORT HEADER CLICKS ──────────────────────────────────────── */
+document.querySelectorAll(".sortable[data-col]").forEach(th => {
+  th.addEventListener("click", () => setSort(th.dataset.col));
 });
 
 /* ── INIT ─────────────────────────────────────────────────────── */
