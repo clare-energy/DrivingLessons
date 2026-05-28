@@ -1,3 +1,4 @@
 flask>=3.0
+gunicorn>=21.0
 # For PostgreSQL (swap sqlite3 for psycopg2 when ready):
 # psycopg2-binary>=2.9
