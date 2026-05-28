@@ -668,6 +668,13 @@ async function editLesson(id){
 
 function openDrivers(){ loadDriversList(); modalDrivers.show(); }
 
+document.getElementById("d-list").addEventListener("click", ev => {
+  const editBtn = ev.target.closest(".d-edit-btn");
+  const delBtn  = ev.target.closest(".d-del-btn");
+  if(editBtn) editDriverInline(editBtn.dataset.id, editBtn.dataset.no, editBtn.dataset.name, editBtn.dataset.dob);
+  if(delBtn)  deleteDriver(delBtn.dataset.id, delBtn.dataset.name);
+});
+
 async function loadDriversList(){
   const data = await fetch("/drivers").then(r => r.json());
   const el = document.getElementById("d-list");
@@ -680,10 +687,12 @@ async function loadDriversList(){
           ${d.dob ? `<div class="m-dob">DOB: ${fmtDate(d.dob)}</div>` : ""}
         </div>
         <div class="m-acts">
-          <button class="btn-icon" onclick="editDriverInline(${d.id},'${esc(d.driver_no)}','${esc(d.name)}','${d.dob||''}')" aria-label="Edit">
+          <button class="btn-icon d-edit-btn" aria-label="Edit"
+            data-id="${d.id}" data-no="${esc(d.driver_no)}" data-name="${esc(d.name)}" data-dob="${d.dob||''}">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn-icon del" onclick="deleteDriver(${d.id},'${esc(d.name)}')" aria-label="Delete">
+          <button class="btn-icon del d-del-btn" aria-label="Delete"
+            data-id="${d.id}" data-name="${esc(d.name)}">
             <i class="bi bi-trash3"></i>
           </button>
         </div>
@@ -716,7 +725,7 @@ async function saveDriver(id){
   loadDriversList();
 }
 
-async function deleteDriver(id, name){
+async function deleteDriver(id, name = "this driver"){
   if(!confirm(`Delete driver "${name}"? This will not delete their lessons.`)) return;
   await fetch(`/drivers/${id}`, { method: "DELETE" });
   loadDriversList();
@@ -742,6 +751,13 @@ async function addDriver(){
 
 function openLogbooks(){ loadLogbooksList(); modalLogbooks.show(); }
 
+document.getElementById("l-list").addEventListener("click", ev => {
+  const editBtn = ev.target.closest(".l-edit-btn");
+  const delBtn  = ev.target.closest(".l-del-btn");
+  if(editBtn) editLogbookInline(editBtn.dataset.id, editBtn.dataset.no);
+  if(delBtn)  deleteLogbook(delBtn.dataset.id, delBtn.dataset.no);
+});
+
 async function loadLogbooksList(){
   const data = await fetch("/logbooks").then(r => r.json());
   const el = document.getElementById("l-list");
@@ -751,10 +767,12 @@ async function loadLogbooksList(){
       <div class="m-row">
         <span>${esc(l.logbook_no)}</span>
         <div class="m-acts">
-          <button class="btn-icon" onclick="editLogbookInline(${l.id},'${esc(l.logbook_no)}')" aria-label="Edit">
+          <button class="btn-icon l-edit-btn" aria-label="Edit"
+            data-id="${l.id}" data-no="${esc(l.logbook_no)}">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn-icon del" onclick="deleteLogbook(${l.id},'${esc(l.logbook_no)}')" aria-label="Delete">
+          <button class="btn-icon del l-del-btn" aria-label="Delete"
+            data-id="${l.id}" data-no="${esc(l.logbook_no)}">
             <i class="bi bi-trash3"></i>
           </button>
         </div>
